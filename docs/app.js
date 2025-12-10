@@ -1,3 +1,7 @@
+// =========================================
+// APP.JS - Gestión de Expedientes con IndexedDB
+// =========================================
+
 let db;
 
 // Inicializar Base de Datos
@@ -35,9 +39,7 @@ function agregarCliente() {
     if (!nombre) return;
 
     let trans = db.transaction("clientes", "readwrite");
-    let store = trans.objectStore("clientes");
-
-    store.add({ nombre });
+    trans.objectStore("clientes").add({ nombre });
 
     trans.oncomplete = cargarClientes;
 }
@@ -159,7 +161,7 @@ function eliminarDocumento(id) {
 }
 
 /* ---------------------------
-   BACKUP
+   BACKUP LOCAL
 ----------------------------*/
 
 function exportarBackup() {
@@ -212,3 +214,6 @@ function importarBackup(event) {
 
     reader.readAsText(file);
 }
+
+initDB();
+
