@@ -1,134 +1,59 @@
-// =========================================
-// DRIVE.JS - Backup en Google Drive
-// =========================================
+// DRIVE.JS
 
 let accessToken = null;
-let folderId = null;
 
-// Obtener token OAuth completo
-function obtenerToken() {
-    return new Promise(resolve => {
+function getAccessToken() {
+    return new Promise((resolve) => {
         google.accounts.oauth2.initTokenClient({
-            client_id: "813716685470-a4t8hcof0uipjal7kv66nam68pab4de5.apps.googleusercontent.com",
+            client_id: "TU_CLIENT_ID_AQUI",
             scope: "https://www.googleapis.com/auth/drive.file",
-            callback: (resp) => {
-                accessToken = resp.access_token;
-                resolve(resp.access_token);
+            callback: (tokenResponse) => {
+                accessToken = tokenResponse.access_token;
+                resolve(accessToken);
             }
         }).requestAccessToken();
     });
 }
 
-// Verificar/crear carpeta "Expedientes Legales"
-async function verificarCarpeta() {
-    if (!accessToken) await obtenerToken();
+async function exportBackupDrive() {
+    await getAccessToken();
 
-    let res = await fetch(
-        "https://www.googleapis.com/drive/v3/files?q=name='Expedientes Legales' and mimeType='application/vnd.google-apps.folder'",
-        { headers: { Authorization: "Bearer " + accessToken } }
-    );
+    const backup = await generarBackupJSON();
 
-    let data = await res.json();
+    const metadata = {
+        name: "backup_expedientes.json",
+        mimeType: "application/json"
+    };
 
-    if (data.files && data.files.length > 0) {
-        folderId = data.files[0].id;
-        return;
-    }
+    const form = new FormData();
+    form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+    form.append("file", new Blob([backup], { type: "application/json" }));
 
-    // Crear carpeta
-    let crear = await fetch("https://www.googleapis.com/drive/v3/files", {
+    await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
         method: "POST",
-        headers: {
-            Authorization: "Bearer " + accessToken,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            name: "Expedientes Legales",
-            mimeType: "application/vnd.google-apps.folder"
-        })
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: form
     });
 
-    let nueva = await crear.json();
-    folderId = nueva.id;
+    alert("Backup subido a Google Drive");
 }
 
-// Subir backup a Drive
-async function subirBackupDrive() {
-    await verificarCarpeta();
+async function importarBackupDrive() {
+    await getAccessToken();
 
-    let data = {
-        clientes: await db.transaction("clientes","readonly").objectStore("clientes").getAll(),
-        expedientes: await db.transaction("expedientes","readonly").objectStore("expedientes").getAll(),
-        documentos: await db.transaction("documentos","readonly").objectStore("documentos").getAll()
-    };
+    const res = await fetch("https://www.googleapis.com/drive/v3/files?q=name='backup_expedientes.json'&fields=files(id)", {
+        headers: { Authorization: `Bearer ${accessToken}` }
+    });
 
-    let contenido = JSON.stringify(data);
+    const data = await res.json();
+    if (!data.files || data.files.length === 0) return alert("No se encontró backup");
 
-    let metadata = {
-        name: "backup_expedientes.json",
-        parents: [folderId]
-    };
+    const fileId = data.files[0].id;
 
-    let boundary = "xxxxxxxxxx";
-    let body =
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-        JSON.stringify(metadata) + "\r\n" +
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
-        contenido + "\r\n" +
-        `--${boundary}--`;
+    const fileContent = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+    }).then(r => r.json());
 
-    await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-        {
-            method: "POST",
-            headers: {
-                Authorization: "Bearer " + accessToken,
-                "Content-Type": "multipart/related; boundary=" + boundary
-            },
-            body
-        }
-    );
-
-    document.getElementById("driveStatus").innerHTML = "Backup subido correctamente.";
+    restaurarBackupJSON(fileContent);
 }
 
-// Descargar y restaurar backup desde Drive
-async function descargarBackupDrive() {
-    await verificarCarpeta();
-
-    let res = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='backup_expedientes.json' and '${folderId}' in parents`,
-        { headers: { Authorization: "Bearer " + accessToken } }
-    );
-
-    let data = await res.json();
-    if (!data.files || data.files.length === 0) {
-        alert("No hay backup en Drive");
-        return;
-    }
-
-    let fileId = data.files[0].id;
-
-    let download = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        { headers: { Authorization: "Bearer " + accessToken } }
-    );
-
-    let json = await download.json();
-
-    let trans = db.transaction(["clientes","expedientes","documentos"], "readwrite");
-    trans.objectStore("clientes").clear();
-    trans.objectStore("expedientes").clear();
-    trans.objectStore("documentos").clear();
-
-    json.clientes.forEach(c => trans.objectStore("clientes").add(c));
-    json.expedientes.forEach(e => trans.objectStore("expedientes").add(e));
-    json.documentos.forEach(d => trans.objectStore("documentos").add(d));
-
-    trans.oncomplete = () => {
-        alert("Backup restaurado desde Drive.");
-        cargarClientes();
-        cargarExpedientes();
-        cargarDocumentos();
-    };
-}
