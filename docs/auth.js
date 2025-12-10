@@ -1,40 +1,61 @@
-function handleCredentialResponse(response) {
-    const data = parseJwt(response.credential);
+// =========================================
+// AUTH.JS - Login con Google + Sesión
+// =========================================
 
-    localStorage.setItem("user", JSON.stringify({
-        name: data.name,
-        email: data.email,
-        picture: data.picture
-    }));
+let userSession = null;
 
-    window.location.href = "home.html";
+// Se ejecuta cuando Google entrega el token
+function onLogin(response) {
+    try {
+        const data = jwt_decode(response.credential);
+
+        userSession = {
+            email: data.email,
+            name: data.name,
+            picture: data.picture
+        };
+
+        localStorage.setItem("userSession", JSON.stringify(userSession));
+
+        mostrarUsuario();
+        mostrarApp();
+    } catch (err) {
+        console.error("Error en login:", err);
+    }
 }
 
-window.onload = function () {
-    if (window.location.pathname.includes("index.html")) {
-        google.accounts.id.initialize({
-            client_id: "813716685470-a4t8hcof0uipjal7kv66nam68pab4de5.apps.googleusercontent.com",
-            callback: handleCredentialResponse
-        });
-        google.accounts.id.renderButton(
-            document.querySelector(".g_id_signin"),
-            { theme: "outline", size: "large" }
-        );
-        return;
+// Mostrar perfil en header
+function mostrarUsuario() {
+    let user = JSON.parse(localStorage.getItem("userSession"));
+    if (!user) return;
+
+    document.getElementById("user-info").innerHTML = `
+        <img src="${user.picture}" style="width:35px; border-radius:50%; margin-right:10px;">
+        <span>${user.name}</span>
+    `;
+}
+
+// Si hay sesión guardada → entrar directo
+window.onload = function() {
+    let ses = localStorage.getItem("userSession");
+    if (ses) {
+        mostrarUsuario();
+        mostrarApp();
     }
 };
 
-function parseJwt(token) {
-    return JSON.parse(atob(token.split('.')[1]));
+// Mostrar interfaz app
+function mostrarApp() {
+    document.getElementById("login-section").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+
+    showSection("secClientes");
 }
 
-// Proteger páginas internas
-function checkSession() {
-    let user = localStorage.getItem("user");
-    if (!user) window.location.href = "index.html";
-}
-
+// Logout total
 function logout() {
-    localStorage.removeItem("user");
-    window.location.href = "index.html";
+    google.accounts.id.disableAutoSelect();
+    localStorage.removeItem("userSession");
+    location.reload();
 }
+
