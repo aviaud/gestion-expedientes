@@ -1,32 +1,184 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<title>Expedientes Legales - Login</title>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="auth.js"></script>
+<meta charset="UTF-8">
+<title>Gestión de Expedientes Legales</title>
+
+<meta name="google-signin-client_id" content="813716685470-a4t8hcof0uipjal7kv66nam68pab4de5.apps.googleusercontent.com">
+
+<!-- Estilos básicos -->
 <style>
-body { font-family: Arial; padding: 40px; text-align:center; }
+    body {
+        font-family: Arial;
+        margin: 0;
+        background: #f2f2f2;
+    }
+
+    header {
+        background: #1e3a8a;
+        color: white;
+        padding: 15px;
+        font-size: 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .container {
+        padding: 20px;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .menu button {
+        margin: 5px;
+        padding: 10px;
+        background: #1e40af;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .menu button:hover {
+        background: #1e3a8a;
+    }
+
+    .card {
+        background: white;
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border-left: 5px solid #1e40af;
+    }
+
+    #user-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .search-box {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .backup-buttons button {
+        padding: 10px;
+        margin: 5px;
+        background: #065f46;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
 </style>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- JWT Decoder -->
+<script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+
 </head>
 <body>
 
-<h2>Acceder al Sistema</h2>
+<header>
+    <div>Sistema de Expedientes Legales</div>
+    <div id="user-info"></div>
+</header>
 
-<div id="g_id_onload"
-     data-client_id="813716685470-a4t8hcof0uipjal7kv66nam68pab4de5.apps.googleusercontent.com"
-     data-login_uri="https://aviaud.github.io/expedientes-legales/"
-     data-auto_prompt="false">
+<!-- ================= LOGIN ================ -->
+<div id="login-section" class="container">
+    <h2>Iniciar Sesión</h2>
+    <div id="googleLogin"></div>
+
+    <script>
+        google.accounts.id.initialize({
+            client_id: "813716685470-a4t8hcof0uipjal7kv66nam68pab4de5.apps.googleusercontent.com",
+            callback: onLogin
+        });
+
+        google.accounts.id.renderButton(
+            document.getElementById("googleLogin"),
+            { theme: "filled_blue", size: "large" }
+        );
+
+        google.accounts.id.prompt();
+    </script>
 </div>
 
-<div class="g_id_signin"
-     data-type="standard"
-     data-size="large"
-     data-theme="outline"
-     data-text="continue_with"
-     data-shape="rectangular"
-     data-logo_alignment="left">
+<!-- ================= APP ================= -->
+<div id="app" class="container hidden">
+
+    <div class="menu">
+        <button onclick="showSection('secClientes')">Clientes</button>
+        <button onclick="showSection('secExpedientes')">Expedientes</button>
+        <button onclick="showSection('secDocumentos')">Documentos</button>
+        <button onclick="showSection('secBackup')">Backup</button>
+
+        <button style="background:#7f1d1d" onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <!-- ============ CLIENTES ============= -->
+    <div id="secClientes" class="section hidden">
+        <h2>Clientes</h2>
+
+        <input type="text" class="search-box" placeholder="Buscar..." onkeyup="buscarClientes(this.value)">
+
+        <button onclick="agregarCliente()">Agregar Cliente</button>
+
+        <div id="listaClientes"></div>
+    </div>
+
+    <!-- ============ EXPEDIENTES ============= -->
+    <div id="secExpedientes" class="section hidden">
+        <h2>Expedientes</h2>
+
+        <button onclick="agregarExpediente()">Agregar Expediente</button>
+
+        <div id="listaExpedientes"></div>
+    </div>
+
+    <!-- ============ DOCUMENTOS ============= -->
+    <div id="secDocumentos" class="section hidden">
+        <h2>Documentos</h2>
+
+        <button onclick="agregarDocumento()">Agregar Documento</button>
+
+        <div id="listaDocumentos"></div>
+    </div>
+
+    <!-- ============ BACKUP ============= -->
+    <div id="secBackup" class="section hidden">
+        <h2>Backup</h2>
+
+        <div class="backup-buttons">
+            <button onclick="exportarBackup()">Exportar a JSON</button>
+            <button onclick="document.getElementById('fileBackup').click()">Importar JSON</button>
+            <input type="file" id="fileBackup" class="hidden" onchange="importarBackup(event)">
+        </div>
+
+        <h3>Google Drive</h3>
+
+        <div class="backup-buttons">
+            <button onclick="subirBackupDrive()">Subir Backup a Drive</button>
+            <button onclick="descargarBackupDrive()">Restaurar desde Drive</button>
+        </div>
+
+        <div id="driveStatus"></div>
+    </div>
+
 </div>
+
+<!-- ARCHIVOS JS -->
+<script src="auth.js"></script>
+<script src="app.js"></script>
+<script src="drive.js"></script>
 
 </body>
 </html>
+
