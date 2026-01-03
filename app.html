@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Expedientes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Gestión de Expedientes</h1>
+  <div class="topbar-info">
+    <span id="recordatorios-badge" class="badge" style="display:none;"></span>
+    <span id="usuario-info"></span>
+    <button onclick="logout()">Salir</button>
+  </div>
+</header>
+
+<main class="grid">
+
+  <!-- CREAR EXPEDIENTE -->
+  <section class="panel admin-only">
+    <h3>📁 Crear expediente</h3>
+    <input id="numero" placeholder="Número">
+    <input id="caratula" placeholder="Carátula">
+    <button onclick="crearExpediente()">Crear</button>
+  </section>
+
+  <!-- EXPEDIENTES -->
+  <input id="buscador" placeholder="🔍 Buscar expediente..."
+       onkeyup="buscarExpedientes()">
+
+  <section class="panel">
+    <h3>📂 Expedientes</h3>
+    <ul id="lista-expedientes"></ul>
+  </section>
+
+  <!-- AUDIENCIAS Y CITAS -->
+  <section class="panel panel-audiencias">
+    <h3>📅 Audiencias y Citas</h3>
+    <p id="expediente-audiencias" class="muted">Selecciona un expediente</p>
+    
+    <!-- Formulario para crear audiencia -->
+    <div class="form-audiencia">
+      <input type="date" id="fecha-audiencia" placeholder="Fecha">
+      <input type="time" id="hora-audiencia" placeholder="Hora">
+      <select id="tipo-audiencia">
+        <option value="Audiencia preliminar">Audiencia preliminar</option>
+        <option value="Audiencia de juicio">Audiencia de juicio</option>
+        <option value="Audiencia de conciliación">Audiencia de conciliación</option>
+        <option value="Presentación de pruebas">Presentación de pruebas</option>
+        <option value="Lectura de sentencia">Lectura de sentencia</option>
+        <option value="Reunión con cliente">Reunión con cliente</option>
+        <option value="Otra">Otra</option>
+      </select>
+      <textarea id="descripcion-audiencia" placeholder="Descripción o notas" rows="2"></textarea>
+      <button onclick="crearAudiencia()">+ Agregar Audiencia</button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-audiencias">
+      <button class="filtro-btn active" onclick="filtrarAudiencias('todas')">Todas</button>
+      <button class="filtro-btn" onclick="filtrarAudiencias('proximas')">Próximas</button>
+      <button class="filtro-btn" onclick="filtrarAudiencias('pasadas')">Pasadas</button>
+    </div>
+
+    <!-- Lista de audiencias -->
+    <ul id="lista-audiencias"></ul>
+  </section>
+
+  <!-- DOCUMENTOS -->
+  <section class="panel">
+    <h3>📄 Documentos</h3>
+    <p id="expediente-actual" class="muted">Selecciona un expediente</p>
+
+    <input type="file" id="archivo">
+    <select id="tipo">
+      <option>Escritos</option>
+      <option>Pruebas</option>
+      <option>Resoluciones</option>
+    </select>
+    <button onclick="subirDocumento()">Subir</button>
+
+    <ul id="lista-documentos"></ul>
+  </section>
+
+  <!-- AUDITORÍA EXPEDIENTE -->
+  <section class="panel">
+    <h3>📋 Auditoría del expediente</h3>
+    <button onclick="cargarAuditoriaExpediente()">Ver</button>
+    <ul id="auditoria-expediente"></ul>
+  </section>
+
+  <!-- AUDITORÍA GENERAL -->
+  <section class="panel admin-only">
+    <h3>📊 Auditoría general</h3>
+    <button onclick="cargarAuditoriaGeneral()">Ver</button>
+    <ul id="auditoria-general"></ul>
+  </section>
+
+</main>
+
+<!-- Contenedor de notificaciones toast -->
+<div id="toast-container"></div>
+
+<!-- Modal de recordatorios -->
+<div id="modal-recordatorios" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>🔔 Audiencias Próximas</h3>
+    <ul id="lista-recordatorios"></ul>
+    <button onclick="cerrarModalRecordatorios()">Cerrar</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
